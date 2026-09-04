@@ -2,7 +2,7 @@
 
 [Open the counter](https://frederiklarsendps.github.io/jupyter-notebook-character-counter/)
 
-A single-file, browser-based counter for rendered markdown and code-cell inputs in Jupyter HTML exports. The supplied demo is published unchanged as `index.html`.
+A single-file, browser-based counter for rendered markdown and code-cell inputs in Jupyter HTML exports, published as `index.html`.
 
 ## Course limits
 
@@ -11,7 +11,7 @@ The course allows **10 standard pages of markdown and 10 standard pages of code*
 - Markdown: **24,000 characters**.
 - Code: **24,000 characters**.
 
-Divide each character count by 2,400 to obtain its page equivalent. The demo reports character totals; it does not display page equivalents or automatic over-limit warnings.
+Below each character total, the counter displays its page equivalent out of 10 (for example, `2.50 / 10 pages`). Each page count is calculated as characters divided by 2,400 and rounded to two decimal places. Values above 10 are shown without capping; there are no automatic over-limit warnings. Use the exact character total when checking the limit near the boundary, since rounding can hide a small excess.
 
 ## Use
 

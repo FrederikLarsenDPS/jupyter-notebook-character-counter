@@ -135,6 +135,12 @@
       letter-spacing: -.04em;
     }
 
+    .result .page-count {
+      margin: .2rem 0 .5rem;
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
     .result small { color: var(--muted); }
 
     #status {
@@ -180,11 +186,13 @@
         <div class="result">
           <span>Markdown characters</span>
           <output id="markdownCount">0</output>
+          <span class="page-count" id="markdownPages">0.00 / 10 pages</span>
           <small id="markdownCells">0 cells</small>
         </div>
         <div class="result">
           <span>Code characters</span>
           <output id="codeCount">0</output>
+          <span class="page-count" id="codePages">0.00 / 10 pages</span>
           <small id="codeCells">0 cells</small>
         </div>
       </div>
@@ -194,7 +202,7 @@
 
     <section class="rules">
       <h2>What is counted?</h2>
-      <p>Spaces and line breaks count. HTML tags, attributes, heading permalinks, prompts, outputs, and images do not.</p>
+      <p>Spaces and line breaks count. HTML tags, attributes, heading permalinks, prompts, outputs, and images do not. One page is 2,400 characters, with a separate limit of 10 pages each for markdown and code. Page counts are rounded to two decimal places.</p>
     </section>
   </main>
 
@@ -204,6 +212,12 @@
     const results = document.querySelector("#results");
     const status = document.querySelector("#status");
     const format = new Intl.NumberFormat();
+    const charactersPerPage = 2400;
+    const pageLimit = 10;
+    const pageFormat = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
     document.querySelector("#chooseButton").addEventListener("click", () => input.click());
     input.addEventListener("change", () => analyze(input.files[0]));
@@ -256,6 +270,7 @@
       for (const cell of cells) characters += Array.from(cell.textContent).length;
 
       document.querySelector(`#${kind}Count`).textContent = format.format(characters);
+      document.querySelector(`#${kind}Pages`).textContent = `${pageFormat.format(characters / charactersPerPage)} / ${pageLimit} pages`;
       document.querySelector(`#${kind}Cells`).textContent = `${cells.length} ${cells.length === 1 ? "cell" : "cells"}`;
     }
   </script>
