@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jupyter Notebook Character Counter</title>
+  <meta name="description" content="Count rendered markdown and code characters in a Jupyter HTML export.">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #142033;
+      --muted: #5e6c80;
+      --line: #d9e1ec;
+      --paper: #ffffff;
+      --wash: #f4f7fb;
+      --accent: #075fc7;
+      --accent-dark: #064b9c;
+      --success: #08755c;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #edf4ff 0, var(--wash) 22rem);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(46rem, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 4rem 0;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 13ch;
+      font-size: clamp(2rem, 7vw, 3.75rem);
+      line-height: .98;
+      letter-spacing: -.045em;
+    }
+
+    .intro {
+      max-width: 40rem;
+      margin: 1.25rem 0 2rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      background: var(--paper);
+      box-shadow: 0 1.25rem 3rem rgb(28 56 93 / 10%);
+    }
+
+    .drop-zone {
+      margin: 1rem;
+      padding: 2.75rem 1.5rem;
+      border: 2px dashed #aabbd1;
+      border-radius: .9rem;
+      text-align: center;
+      transition: border-color .15s, background .15s, transform .15s;
+    }
+
+    .drop-zone.dragging {
+      border-color: var(--accent);
+      background: #eef6ff;
+      transform: scale(1.005);
+    }
+
+    .drop-zone strong {
+      display: block;
+      margin-bottom: .35rem;
+      font-size: 1.1rem;
+    }
+
+    .drop-zone p {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+    }
+
+    button {
+      border: 0;
+      border-radius: .6rem;
+      padding: .78rem 1.1rem;
+      background: var(--accent);
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--accent-dark); }
+    button:focus-visible { outline: 3px solid #8bc3ff; outline-offset: 3px; }
+
+    .privacy {
+      margin: 0;
+      padding: 0 1.25rem 1.25rem;
+      color: var(--muted);
+      font-size: .9rem;
+      text-align: center;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      border-top: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .result {
+      padding: 1.5rem;
+      background: var(--paper);
+    }
+
+    .result span {
+      display: block;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 700;
+    }
+
+    .result output {
+      display: block;
+      margin: .3rem 0;
+      color: var(--success);
+      font-size: clamp(2rem, 8vw, 3.25rem);
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .result small { color: var(--muted); }
+
+    #status {
+      min-height: 1.5rem;
+      margin: 1rem 1.25rem;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .rules {
+      margin-top: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      border-left: 3px solid var(--accent);
+      background: rgb(255 255 255 / 72%);
+    }
+
+    .rules h2 { margin: 0 0 .6rem; font-size: 1rem; }
+    .rules p { margin: 0; color: var(--muted); line-height: 1.55; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 34rem) {
+      main { padding: 2.5rem 0; }
+      .results { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Notebook character counter</h1>
+    <p class="intro">Choose a Jupyter <code>.html</code> export to count characters in rendered markdown and code-cell inputs.</p>
+
+    <section class="panel" aria-label="Notebook counter">
+      <div class="drop-zone" id="dropZone">
+        <strong>Drop your HTML file here</strong>
+        <p>or select it from your computer</p>
+        <input id="fileInput" type="file" accept=".html,text/html" hidden>
+        <button id="chooseButton" type="button">Choose HTML file</button>
+      </div>
+
+      <p class="privacy">The file is processed only in this browser. Nothing is uploaded.</p>
+
+      <div class="results" id="results" hidden>
+        <div class="result">
+          <span>Markdown characters</span>
+          <output id="markdownCount">0</output>
+          <small id="markdownCells">0 cells</small>
+        </div>
+        <div class="result">
+          <span>Code characters</span>
+          <output id="codeCount">0</output>
+          <small id="codeCells">0 cells</small>
+        </div>
+      </div>
+
+      <p id="status" role="status" aria-live="polite">No file selected.</p>
+    </section>
+
+    <section class="rules">
+      <h2>What is counted?</h2>
+      <p>Spaces and line breaks count. HTML tags, attributes, heading permalinks, prompts, outputs, and images do not.</p>
+    </section>
+  </main>
+
+  <script>
+    const input = document.querySelector("#fileInput");
+    const dropZone = document.querySelector("#dropZone");
+    const results = document.querySelector("#results");
+    const status = document.querySelector("#status");
+    const format = new Intl.NumberFormat();
+
+    document.querySelector("#chooseButton").addEventListener("click", () => input.click());
+    input.addEventListener("change", () => analyze(input.files[0]));
+
+    for (const event of ["dragenter", "dragover"]) {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.classList.add("dragging");
+      });
+    }
+
+    for (const event of ["dragleave", "drop"]) {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.classList.remove("dragging");
+      });
+    }
+
+    dropZone.addEventListener("drop", e => analyze(e.dataTransfer.files[0]));
+
+    async function analyze(file) {
+      if (!file) return;
+      status.textContent = `Reading ${file.name}…`;
+
+      try {
+        const source = await file.text();
+        const notebook = new DOMParser().parseFromString(source, "text/html");
+
+        notebook.querySelectorAll(".jp-MarkdownCell .anchor-link").forEach(link => link.remove());
+
+        const markdown = notebook.querySelectorAll(".jp-MarkdownCell .jp-MarkdownOutput");
+        const code = notebook.querySelectorAll(".jp-CodeCell .jp-InputArea-editor pre");
+
+        if (!markdown.length && !code.length) {
+          throw new Error("No Jupyter markdown or code cells were found.");
+        }
+
+        show("markdown", markdown);
+        show("code", code);
+        results.hidden = false;
+        status.textContent = `Counted ${file.name}`;
+      } catch (error) {
+        results.hidden = true;
+        status.textContent = error.message;
+      }
+    }
+
+    function show(kind, cells) {
+      let characters = 0;
+      for (const cell of cells) characters += Array.from(cell.textContent).length;
+
+      document.querySelector(`#${kind}Count`).textContent = format.format(characters);
+      document.querySelector(`#${kind}Cells`).textContent = `${cells.length} ${cells.length === 1 ? "cell" : "cells"}`;
+    }
+  </script>
+</body>
+</html>
